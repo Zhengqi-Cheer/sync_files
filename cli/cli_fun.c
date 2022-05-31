@@ -40,9 +40,9 @@ void mk_file(char* file_name,int sock)
     struct stat file;
     stat(file_name,&file);
     char sendBuf[SIZE] = {'\0'};
-    int filesize = file.st_size;
-    int hard_num = file.st_nlink;
-    int inode_id = file.st_ino;
+    int  filesize = file.st_size;
+    int  hard_num = file.st_nlink;
+    int  inode_id = file.st_ino;
     if(hard_num > 1){
         if(hard_file_head == NULL){
             hard_list(inode_id,file_name);
@@ -161,9 +161,9 @@ void rm_dir(char *dir_path,int sock)
     strcat(send_buff,dir_path);
     journal_write(send_buff);
 }
-
-
-
+/*
+第一次上传储存硬链接
+*/
 void hard_list(int inode,char *path)
 {
     struct hard_link_list *newnode = (struct hard_link_list *)malloc(sizeof(struct hard_link_list));
@@ -182,6 +182,41 @@ void hard_list(int inode,char *path)
         temp->next = newnode;
     }
 }
+/******
+寻找源文件
+******/
+char* seek_h_Source_file(int inode,char *file_name)
+{
+    DIR *s_dir = opendir(SYNC_PATH);
+    char s_path[SIZE] = {'\0'};
+    memcpy(s_path,SYNC_PATH,strlen(SYNC_PATH));
+    strcat(s_path,"/");
+    struct dirent *directory = NULL;
+    while(directory = readdir(s_dir)){
+    //目录文件
+        memcpy(s_path,directory -> d_name,strlen(directory->d_name));
+        if(directory -> d_type == 4){
+            seek_h_Source_file(inode,file_name);
+    //文件
+        }else if(directory -> d_type == 8){
+            struct stat s_stat;
+            memset(&s_stat,0,sizeof(s_stat));
+            if(stat(s_path,&s_stat)){
+                perror("seek file error:");
+                return NULL;
+            }
+
+            if((s_stat.st_ino == inode) && strcmp(s_path,file_name)){
+                char *_sp = s_path;
+                return _sp;
+            }
+        }
+        char *p = strrchr(s_path,'/');   
+        p = '\0';
+    }
+    printf("没有找到硬链接源文件\n");
+}
+
 
 /******
 同步硬链接命令
@@ -225,18 +260,22 @@ void mk_linkfile(char *dir_path,int sock)
 
 /*********
 *判断是否为链接文件
+硬：inode number
+软：S_IFLNK
 *********/
 int  _if_linkfile(char *filename)
 {   
     struct stat stat_buf;
     struct stat *p = &stat_buf;
     memset(&stat_buf,'\0',sizeof(stat_buf));
-    if(-1 == lstat(filename,p)){
+    if(-1 == stat(filename,p)){
         perror("lstat ");
     }
     if(S_ISLNK(p->st_mode)){
         return S_IFLNK;
-    }else{
+    }else if(p->st_nlink > 1){
+        return p->st_ino;
+    }else {
         return 0;
     }
 }
@@ -347,7 +386,7 @@ int delete_link(struct dir_link *head,char *dir_path)
 /*******
 *添加/更新事件到事件队列中
 *******/
-void add_list(struct event_list *head ,char *cmd,char *do_path)
+void add_list(int flag,struct event_list *head ,char *cmd,char *do_path)
 {//改文件已经有事件发生了,
     struct event_list *temp_head = head;
     while(temp_head){ 
@@ -374,6 +413,7 @@ void add_list(struct event_list *head ,char *cmd,char *do_path)
     strcpy(newnode->cmd,cmd); 
     newnode->do_path = (char*)malloc(strlen(do_path)+1);
     strcpy(newnode->do_path,do_path);
+    newnode->inode = flag;
     newnode->next = NULL;
     temp_head = head;
     if(temp_head == NULL){
@@ -427,42 +467,45 @@ void do_event(int fd,struct inotify_event *event,struct dir_link *head,struct ev
         }
     }
     
-    //是目录？
     if(strstr(event->name,".swx")){
         return;
     }else if(strstr(event->name,".swp")){
         return;
     }
+    //是目录？
     if(event->mask & IN_ISDIR){
         if(event->mask & (IN_CREATE | IN_MOVED_TO)){
             int wd = inotify_add_watch(fd,temp,IN_CREATE|IN_DELETE|IN_MOVE|IN_MODIFY|IN_DELETE_SELF);
             add_link(head, wd, temp);
             if(event->mask & IN_MOVED_TO){
-                add_list(event_head,"mo",temp);
+                add_list(0,event_head,"mo",temp);
             }else {
-                add_list(event_head,"mk",temp);
+                add_list(0,event_head,"mk",temp);
             }
         }
         if(event->mask & (IN_DELETE | IN_MOVED_FROM)){
             int wd = delete_link(head,temp);
             inotify_rm_watch(fd,wd);
             if(event->mask & IN_MOVED_FROM){
-                add_list(event_head,"mf",temp);
+                add_list(0,event_head,"mf",temp);
             }else{
-                add_list(event_head,"rf",temp);
+                add_list(0,event_head,"rf",temp);
             }
         }
     //是其他、普通文件？
     }else{
         if(event->mask & (IN_CREATE| IN_MOVED_TO)){
             //是符号文件？
-            if(S_IFLNK == _if_linkfile(temp)){
-                add_list(event_head, "ln", temp);
-            }else {
-                add_list(event_head, "up", temp);
+            int flag = _if_linkfile(temp);  
+            if(S_IFLNK == flag){
+                add_list(0,event_head, "ln", temp);
+            }else if(flag){
+                add_list(flag,event_head,"hd",temp);
+            }else{
+                add_list(0,event_head, "up", temp);
             }
         }else if(event->mask & (IN_DELETE | IN_MOVED_FROM)){
-            add_list(event_head, "rm", temp);
+            add_list(0,event_head, "rm", temp);
         } 
     }
 }
@@ -491,6 +534,9 @@ void signal_do(int num)
             mv_dir(FROM,temp_head->do_path,_sock);
         }else if(!strcmp(temp_head->cmd,"mo")){
             mv_dir(OUT,temp_head->do_path,_sock);
+        }else if(!strcmp(temp_head->cmd,"hd")){
+            char *s_path = seek_h_Source_file(temp_head->inode,temp_head->do_path);
+            hard_link(_sock,temp_head->do_path,s_path);
         }
         struct event_list *free_node = temp_head;
         temp_head = temp_head->next;
@@ -546,7 +592,6 @@ void journal_write(char *write_buf)
 *移动文件夹指令
 ******/
 char cmd[SIZE] = {'\0'};
-
 void mv_dir(int num,char *dir_path,int sock)
 {   
      char cmd_buf[SIZE] = {"mv "}; 

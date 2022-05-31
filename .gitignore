@@ -1,0 +1,21 @@
+##igenore these files##
+
+/target/
+
+##文件类
+
+a.out
+*.txt
+*.jpg
+*.o
+*.swp
+*.zip
+
+##目录
+
+
+./test
+./uu
+
+sync.result
+
