@@ -38,7 +38,11 @@ void mk_file(char* file_name,int sock)
 {   
     //读取文件信息
     struct stat file;
-    stat(file_name,&file);
+    if(lstat(file_name,&file)){
+        perror(" state error");
+        exit(-1);
+    }
+    
     char sendBuf[SIZE] = {'\0'};
     int  filesize = file.st_size;
     int  hard_num = file.st_nlink;
@@ -53,6 +57,7 @@ void mk_file(char* file_name,int sock)
                     hard_link(sock,file_name,temp_head->path);
                     return;
                 }
+                temp_head = temp_head->next;
             }
             hard_list(inode_id,file_name);
         }
@@ -68,8 +73,9 @@ void mk_file(char* file_name,int sock)
     int fdfile = open(file_name,O_RDONLY);
     if(-1 == fdfile) {
         perror("open");
-        printf("[%s]\n",file_name);
-        exit(-1);
+        printf("open error[%s]\n",file_name);
+    
+        //exit(-1);
         return;	
     }
     
@@ -80,9 +86,9 @@ void mk_file(char* file_name,int sock)
         if(-1 == n_write) {
             perror("write");
             printf("[%s]\n",file_name);
-            close(c_fd);
+           // close(c_fd);
             close(fdfile);
-            exit(-1);
+           // exit(-1);
             return;
         }
         
@@ -121,15 +127,15 @@ void rm_file(char* file_name,int sock)
 **/
 void mk_dir (char *dir_path,int sock)
 {
+    printf("mkdir:%s\n",dir_path);
     int c_fd = sock;
-
     char sendbuf[SIZE] = {"mk"};
     strcat (sendbuf,dir_path);
     int n_write = write(c_fd,sendbuf,sizeof(sendbuf));
     if(n_write == -1){
         perror("directory synchronization  error : mk ");
         printf("[%s]\n",dir_path);
-        exit(-1);
+       // exit(-1);
         return;
     }
     
@@ -152,7 +158,7 @@ void rm_dir(char *dir_path,int sock)
     int n_write = write(c_fd,send_buff,sizeof(send_buff));
     if(n_write == -1){
         perror(" directory synchronization  error : rm ");
-        exit(-1);
+       // exit(-1);
         return;
     }
 
@@ -210,9 +216,9 @@ char* seek_h_Source_file(char* seek_dir ,int inode,char *file_name)
         strncat(s_path,directory->d_name,strlen(directory->d_name));
     //目录文件
         if(directory -> d_type == 4){
-            char *p = seek_h_Source_file(s_path,inode,file_name);
-            if(p){
-                return p;
+            char *sp = seek_h_Source_file(s_path,inode,file_name);
+            if(sp){
+                return sp;
             }
     //文件
         }else if(directory -> d_type == 8){
@@ -237,7 +243,7 @@ char* seek_h_Source_file(char* seek_dir ,int inode,char *file_name)
     }
     closedir(s_dir);
     printf("没有找到硬链接源文件\n");
-    return NULL;
+    //return NULL;
 }
 
 
@@ -254,7 +260,7 @@ void hard_link(int sock,char *O_path,char *S_path)
     int n_write = write(sock,send_buff,sizeof(send_buff));
     if(n_write == -1){
         perror("hard_link error ");
-        exit(-1);
+       // exit(-1);
     }
 }
 
@@ -270,7 +276,7 @@ void mk_linkfile(char *dir_path,int sock)
     int n_write = write(c_fd,send_buff,sizeof(send_buff));
     if(n_write == -1){
         perror(" linkfile synchronization  error : ln ");
-        exit(-1);
+        //exit(-1);
         return;
     }
 

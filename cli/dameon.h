@@ -15,7 +15,7 @@
 #include <errno.h>
 
 #define PORT 8877 
-#define IP "172.16.163.144"   //service ip
+#define IP "172.16.163.146"   //service ip
 #define MAX_DIR_NUM 30
 #define SIZE 1024
 #define OUT  0 
