@@ -205,6 +205,7 @@ char* seek_h_Source_file(char* seek_dir ,int inode,char *file_name)
     memcpy(s_path,seek_dir,strlen(seek_dir));
     strcat(s_path,"/");
     struct dirent *directory = NULL;
+    char *sp = NULL;
     while(directory = readdir(s_dir)){
         if(!strcmp(directory->d_name,".")){
             continue;
@@ -216,15 +217,15 @@ char* seek_h_Source_file(char* seek_dir ,int inode,char *file_name)
         strncat(s_path,directory->d_name,strlen(directory->d_name));
     //目录文件
         if(directory -> d_type == 4){
-            char *sp = seek_h_Source_file(s_path,inode,file_name);
+            sp = seek_h_Source_file(s_path,inode,file_name);
             if(sp){
-                return sp;
+                break;
             }
     //文件
         }else if(directory -> d_type == 8){
             struct stat s_stat;
             memset(&s_stat,0,sizeof(s_stat));
-            if(stat(s_path,&s_stat)){
+            if(lstat(s_path,&s_stat)){
                 perror("seek file error:");
                 printf("s_path error:%s\n",s_path);
                 return NULL;
@@ -238,12 +239,13 @@ char* seek_h_Source_file(char* seek_dir ,int inode,char *file_name)
                 break;
             }
         }
+
         char *p = strrchr(s_path,'/');   
-        p = '\0';
+        *(p+1) = '\0';
     }
+
     closedir(s_dir);
-    printf("没有找到硬链接源文件\n");
-    //return NULL;
+    return sp;
 }
 
 
@@ -569,6 +571,8 @@ void signal_do(int num)
             if(s_path){
                 hard_link(_sock,temp_head->do_path,s_path);
                 free(s_path);
+            }else {
+                printf("没有找到硬链接%s的源文件\n",temp_head->do_path);
             }
         }
         struct event_list *free_node = temp_head;
