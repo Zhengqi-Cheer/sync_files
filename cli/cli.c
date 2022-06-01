@@ -29,9 +29,9 @@ int main(void)
         for(char *p = readbuf ; p < (readbuf+dir_read);){   
             struct inotify_event *event;
             event = (struct inotify_event*)p;
-            //printf("mask:%d\n",event->mask);
-            //printf("name:%s\n",event->name);
-            //printf("wd:%d\n",event->wd);
+            printf("mask:%d\n",event->mask);
+            printf("name:%s\n",event->name);
+            printf("wd:%d\n",event->wd);
 
             do_event(inotfy_fd,event,head_link,_event_P);
             p+= sizeof(struct inotify_event) + event->len;

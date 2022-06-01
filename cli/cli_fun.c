@@ -185,22 +185,37 @@ void hard_list(int inode,char *path)
 /******
 寻找源文件
 ******/
-char* seek_h_Source_file(int inode,char *file_name)
-{
-    DIR *s_dir = opendir(SYNC_PATH);
+char* seek_h_Source_file(char* seek_dir ,int inode,char *file_name)
+{   
+    //printf("inode:%d\n",inode);
+    DIR *s_dir = opendir(seek_dir);
+    if(s_dir == NULL){
+        perror("seek -> opendir error");
+        printf("open dir error:%s\n",seek_dir);
+        exit(-1);
+    }
+    
     char s_path[SIZE] = {'\0'};
-    memcpy(s_path,SYNC_PATH,strlen(SYNC_PATH));
+    memcpy(s_path,seek_dir,strlen(seek_dir));
     strcat(s_path,"/");
     struct dirent *directory = NULL;
     while(directory = readdir(s_dir)){
+        if(!strcmp(directory->d_name,".")){
+            continue;
+        }
+        if(!strcmp(directory->d_name,"..")){
+            continue;
+        }
+        
+        strncat(s_path,directory->d_name,strlen(directory->d_name));
     //目录文件
-        memcpy(s_path,directory -> d_name,strlen(directory->d_name));
         if(directory -> d_type == 4){
-            seek_h_Source_file(inode,file_name);
+            seek_h_Source_file(s_path,inode,file_name);
     //文件
         }else if(directory -> d_type == 8){
             struct stat s_stat;
             memset(&s_stat,0,sizeof(s_stat));
+            printf("s_path:%s\n",s_path);
             if(stat(s_path,&s_stat)){
                 perror("seek file error:");
                 return NULL;
@@ -209,11 +224,13 @@ char* seek_h_Source_file(int inode,char *file_name)
             if((s_stat.st_ino == inode) && strcmp(s_path,file_name)){
                 char *_sp = s_path;
                 return _sp;
+                break;
             }
         }
         char *p = strrchr(s_path,'/');   
         p = '\0';
     }
+    closedir(s_dir);
     printf("没有找到硬链接源文件\n");
 }
 
@@ -268,7 +285,7 @@ int  _if_linkfile(char *filename)
     struct stat stat_buf;
     struct stat *p = &stat_buf;
     memset(&stat_buf,'\0',sizeof(stat_buf));
-    if(-1 == stat(filename,p)){
+    if(-1 == lstat(filename,p)){
         perror("lstat ");
     }
     if(S_ISLNK(p->st_mode)){
@@ -276,6 +293,7 @@ int  _if_linkfile(char *filename)
     }else if(p->st_nlink > 1){
         return p->st_ino;
     }else {
+        printf("都不是\n");
         return 0;
     }
 }
@@ -535,7 +553,7 @@ void signal_do(int num)
         }else if(!strcmp(temp_head->cmd,"mo")){
             mv_dir(OUT,temp_head->do_path,_sock);
         }else if(!strcmp(temp_head->cmd,"hd")){
-            char *s_path = seek_h_Source_file(temp_head->inode,temp_head->do_path);
+            char *s_path = seek_h_Source_file(SYNC_PATH,temp_head->inode,temp_head->do_path);
             hard_link(_sock,temp_head->do_path,s_path);
         }
         struct event_list *free_node = temp_head;
