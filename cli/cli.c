@@ -31,7 +31,6 @@ int main(void)
             struct inotify_event *event;
             event = (struct inotify_event*)p;
             p+= sizeof(struct inotify_event) + event->len;
-#if 1
             if(strstr(event->name,".swx")){
                 continue;
             }else if(strstr(event->name,".swp")){
@@ -41,7 +40,6 @@ int main(void)
             }else if(strstr(event->name,"~")){
                 continue;
             }
-#endif
             printf("mask:%d\n",event->mask);
             printf("name:%s\n",event->name);
             printf("wd:%d\n",event->wd);
