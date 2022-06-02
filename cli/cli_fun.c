@@ -1,6 +1,7 @@
 #include "dameon.h"
 
 struct event_list *_event_P = NULL; //事件队列头指针
+struct hard_link_list *hard_file_head = NULL;
 
 /*
 * 创建TCP连接
@@ -31,21 +32,20 @@ int  init_tcp(void)
 
 /*
 *同步增加文件函数
+flag: 1 --> 第一次上传
+      0 --> 后续不需要检测时
 */
-
-struct hard_link_list *hard_file_head = NULL;
-void mk_file(char* file_name,int sock) 
+void mk_file(int flag,char* file_name,int sock) 
 {   
-    int filesize = if_hard_first(sock,file_name);
-    if(filesize == -1){ //硬链接同inode文件已经上传
-       return; 
+    int filesize = if_hard_first(flag,sock,file_name);
+    if(filesize == -1){ //硬链接同inode文件已经上传过
+        return; 
     }
-    
+
     char sendBuf[SIZE] = {'\0'};
     memcpy(sendBuf,&filesize,sizeof(int));
     memcpy(sendBuf+sizeof(int),"up",strlen("up"));
     memcpy(sendBuf+sizeof(int)+strlen("up"),file_name,strlen(file_name));
-
     int c_fd = sock;
     write(c_fd,sendBuf,sizeof(sendBuf));
     memset(sendBuf, '\0', sizeof(sendBuf));
@@ -100,6 +100,7 @@ void rm_file(char* file_name,int sock)
     strcat(sendbuf,file_name);
     journal_write(sendbuf);
 }
+
 /**
 *同步增加目录函数
 **/
@@ -113,7 +114,6 @@ void mk_dir (char *dir_path,int sock)
     if(n_write == -1){
         perror("directory synchronization  error : mk ");
         printf("[%s]\n",dir_path);
-       // exit(-1);
         return;
     }
     
@@ -136,7 +136,6 @@ void rm_dir(char *dir_path,int sock)
     int n_write = write(c_fd,send_buff,sizeof(send_buff));
     if(n_write == -1){
         perror(" directory synchronization  error : rm ");
-       // exit(-1);
         return;
     }
 
@@ -150,7 +149,7 @@ void rm_dir(char *dir_path,int sock)
 返回值：filesize --> yes
         -1       --> no
 **/
-int if_hard_first(int sock,char* file_name)
+int if_hard_first(int flag,int sock,char* file_name)
 {
     //读取文件信息
     struct stat file;
@@ -162,7 +161,9 @@ int if_hard_first(int sock,char* file_name)
     int  filesize = file.st_size;
     int  hard_num = file.st_nlink;
     int  inode_id = file.st_ino;
-    if(hard_num > 1){
+    if(flag){
+        return filesize;
+    }else if(hard_num > 1){
         if(hard_file_head == NULL){
             hard_list(inode_id,file_name);
             return filesize;
@@ -178,6 +179,8 @@ int if_hard_first(int sock,char* file_name)
             hard_list(inode_id,file_name);
             return filesize;
         }
+    }else{
+        return filesize;
     }
 }
 
@@ -207,7 +210,6 @@ void hard_list(int inode,char *path)
 ******/
 char* seek_h_Source_file(char* seek_dir ,int inode,char *file_name)
 {   
-    //printf("inode:%d\n",inode);
     DIR *s_dir = opendir(seek_dir);
     if(s_dir == NULL){
         perror("seek -> opendir error");
@@ -257,7 +259,6 @@ char* seek_h_Source_file(char* seek_dir ,int inode,char *file_name)
         char *p = strrchr(s_path,'/');   
         *(p+1) = '\0';
     }
-
     closedir(s_dir);
     return sp;
 }
@@ -285,14 +286,13 @@ void hard_link(int sock,char *O_path,char *S_path)
 *********/
 void mk_linkfile(char *dir_path,int sock)
 {   
-    int c_fd = sock;
+    int  c_fd = sock;
     char send_buff[SIZE] = {"ln"};
     strcat(send_buff,dir_path);
-    int n_read = n_read = readlink(dir_path,send_buff+strlen(send_buff)+1,sizeof(send_buff));
-    int n_write = write(c_fd,send_buff,sizeof(send_buff));
+    int  n_read = n_read = readlink(dir_path,send_buff+strlen(send_buff)+1,sizeof(send_buff));
+    int  n_write = write(c_fd,send_buff,sizeof(send_buff));
     if(n_write == -1){
         perror(" linkfile synchronization  error : ln ");
-        //exit(-1);
         return;
     }
 
@@ -341,7 +341,7 @@ void first_event (int i_fd,char *dir_path,int num,struct dir_link *head,int sock
     char path[SIZE] = {0};
     memset(path,'\0',sizeof(path));
     strcat(path,dir_path);
-    DIR *pdir = opendir(dir_path);
+    DIR  *pdir = opendir(dir_path);
     strcat(path,"/");   //path --> <xxx/path/>
     struct dirent *directory = NULL;
     while(directory = readdir(pdir)){
@@ -363,7 +363,7 @@ void first_event (int i_fd,char *dir_path,int num,struct dir_link *head,int sock
 
         }else if(directory -> d_type == 8){
             //普通文jian 
-            mk_file(path,sock);
+            mk_file(1,path,sock);
 
         }else if(directory -> d_type == 10){
             //符号文件 
@@ -377,12 +377,6 @@ void first_event (int i_fd,char *dir_path,int num,struct dir_link *head,int sock
         *(p+1) = '\0';
     }
     closedir(pdir);
-#if 0
-    if(num){ 
-        memset(path,0,sizeof(path));
-        strcat(path,"send first ok");
-    }
-#endif
 }
 
 /******
@@ -567,7 +561,7 @@ void signal_do(int num)
     struct event_list *temp_head = _event_P;
     while(temp_head != NULL){
         if(!strcmp(temp_head->cmd,"up")) {
-            mk_file(temp_head->do_path,_sock);
+            mk_file(0,temp_head->do_path,_sock);
         }else if(!strcmp(temp_head->cmd,"rm")){
             rm_file(temp_head->do_path,_sock);
         }else if(!strcmp(temp_head->cmd,"mk")){

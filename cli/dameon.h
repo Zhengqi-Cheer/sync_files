@@ -47,7 +47,7 @@ extern  struct event_list *_event_P ;
 extern  int _sock;
 
 int   init_tcp(void);
-void  mk_file(char* file_name,int sock);  //发送同步文件命令
+void  mk_file(int flag,char* file_name,int sock);  //发送同步文件命令
 void  rm_file(char* file_name,int sock);  //发送删除文件命令
 void  mk_dir (char *dir_path,int sock);   //发送创建目录命令
 void  rm_dir(char *dir_path,int sock);      //发送删除目录命令
@@ -70,5 +70,5 @@ void  p_list();
 void  p_dir(struct dir_link *dir_head);
 void  journal_write(char *write_buf);
 int   _if_linkfile(char *filename);
-int   if_hard_first(int sock,char * file_name);
+int   if_hard_first(int flag,int sock,char * file_name);
 char* seek_h_Source_file(char* seek_dir,int inode,char *file_name);
