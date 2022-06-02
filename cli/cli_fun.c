@@ -161,7 +161,7 @@ int if_hard_first(int flag,int sock,char* file_name)
     int  filesize = file.st_size;
     int  hard_num = file.st_nlink;
     int  inode_id = file.st_ino;
-    if(flag){
+    if(flag == 0){
         return filesize;
     }else if(hard_num > 1){
         if(hard_file_head == NULL){
@@ -506,12 +506,6 @@ void do_event(int fd,struct inotify_event *event,struct dir_link *head,struct ev
             temp_head = temp_head ->next;
         }
     }
-    
-    if(strstr(event->name,".swx")){
-        return;
-    }else if(strstr(event->name,".swp")){
-        return;
-    }
     //是目录？
     if(event->mask & IN_ISDIR){
         if(event->mask & (IN_CREATE | IN_MOVED_TO)){
@@ -534,7 +528,9 @@ void do_event(int fd,struct inotify_event *event,struct dir_link *head,struct ev
         }
     //是其他、普通文件？
     }else{
-        if(event->mask & (IN_CREATE| IN_MOVED_TO)){
+        if(event->mask & IN_MODIFY){
+            add_list(0,event_head,"up",temp);
+        }else if(event->mask & (IN_CREATE | IN_MOVED_TO | IN_MODIFY)){
             //是符号文件？
             int flag = _if_linkfile(temp);  
             if(S_IFLNK == flag){
