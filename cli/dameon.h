@@ -15,7 +15,7 @@
 #include <errno.h>
 
 #define PORT 8877 
-#define IP "172.16.163.146"   //service ip
+#define IP "172.16.163.148"   //service ip
 #define MAX_DIR_NUM 30
 #define SIZE 1024
 #define OUT  0 
@@ -70,4 +70,5 @@ void  p_list();
 void  p_dir(struct dir_link *dir_head);
 void  journal_write(char *write_buf);
 int   _if_linkfile(char *filename);
+int   if_hard_first(int sock,char * file_name);
 char* seek_h_Source_file(char* seek_dir,int inode,char *file_name);

@@ -36,33 +36,12 @@ int  init_tcp(void)
 struct hard_link_list *hard_file_head = NULL;
 void mk_file(char* file_name,int sock) 
 {   
-    //读取文件信息
-    struct stat file;
-    if(lstat(file_name,&file)){
-        perror(" state error");
-        exit(-1);
+    int filesize = if_hard_first(sock,file_name);
+    if(filesize == -1){ //硬链接同inode文件已经上传
+       return; 
     }
     
     char sendBuf[SIZE] = {'\0'};
-    int  filesize = file.st_size;
-    int  hard_num = file.st_nlink;
-    int  inode_id = file.st_ino;
-    if(hard_num > 1){
-        if(hard_file_head == NULL){
-            hard_list(inode_id,file_name);
-        }else {
-            struct hard_link_list *temp_head = hard_file_head;
-            while(temp_head){
-                if(temp_head->inode == inode_id){
-                    hard_link(sock,file_name,temp_head->path);
-                    return;
-                }
-                temp_head = temp_head->next;
-            }
-            hard_list(inode_id,file_name);
-        }
-    }
-    
     memcpy(sendBuf,&filesize,sizeof(int));
     memcpy(sendBuf+sizeof(int),"up",strlen("up"));
     memcpy(sendBuf+sizeof(int)+strlen("up"),file_name,strlen(file_name));
@@ -74,7 +53,6 @@ void mk_file(char* file_name,int sock)
     if(-1 == fdfile) {
         perror("open");
         printf("open error[%s]\n",file_name);
-    
         //exit(-1);
         return;	
     }
@@ -167,6 +145,42 @@ void rm_dir(char *dir_path,int sock)
     strcat(send_buff,dir_path);
     journal_write(send_buff);
 }
+/**
+功能：第一次上传判断硬链接源文件是否是第一次同步
+返回值：filesize --> yes
+        -1       --> no
+**/
+int if_hard_first(int sock,char* file_name)
+{
+    //读取文件信息
+    struct stat file;
+    if(lstat(file_name,&file)){
+        perror(" state error");
+        exit(-1);
+    }
+    
+    int  filesize = file.st_size;
+    int  hard_num = file.st_nlink;
+    int  inode_id = file.st_ino;
+    if(hard_num > 1){
+        if(hard_file_head == NULL){
+            hard_list(inode_id,file_name);
+            return filesize;
+        }else {
+            struct hard_link_list *temp_head = hard_file_head;
+            while(temp_head){
+                if(temp_head->inode == inode_id){
+                    hard_link(sock,file_name,temp_head->path);
+                    return -1;
+                }
+                temp_head = temp_head->next;
+            }
+            hard_list(inode_id,file_name);
+            return filesize;
+        }
+    }
+}
+
 /*
 第一次上传储存硬链接
 */
