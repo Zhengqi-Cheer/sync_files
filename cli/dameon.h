@@ -15,8 +15,8 @@
 #include <errno.h>
 
 #define PORT 8877 
-#define IP "172.16.163.148"   //service ip
-#define MAX_DIR_NUM 30
+#define IP "172.16.163.152"   //service ip
+#define MAX_DIR_NUM 10
 #define SIZE 1024
 #define OUT  0 
 #define FROM 1
@@ -26,20 +26,20 @@
 #define SYNC_FILE "/home/zhengquan/share/git/mession_3/cli/sync.result"
 
 struct hard_link_list{
-    int inode;
-    char *path;
+    int    inode;
+    char   *path;
     struct hard_link_list *next;
 };
 
 struct dir_link{
-    int wd;
-    char *dir_path;
+    int    wd;
+    char   *dir_path;
     struct dir_link *next;
 };
 struct event_list{
-    int inode;
-    char *cmd ;
-    char *do_path;
+    int    inode;
+    char   *cmd ;
+    char   *do_path;
     struct event_list *next;
 };
 
@@ -72,3 +72,7 @@ void  journal_write(char *write_buf);
 int   _if_linkfile(char *filename);
 int   if_hard_first(int flag,int sock,char * file_name);
 char* seek_h_Source_file(char* seek_dir,int inode,char *file_name);
+
+
+
+
