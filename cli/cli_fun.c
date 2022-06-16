@@ -13,6 +13,8 @@ int init_tcp(void)
     if (fd < 0) {
         perror("socket error");
         return -1;
+    } else {
+        printf("sock = %d\n",fd);
     }
 
     //connect	
@@ -39,7 +41,7 @@ int init_tcp(void)
  *flag: 1 --> 第一次上传
  *      0 --> 后续不需要检测时
  */
-void mk_file(int flag, char* file_name, int sock) 
+void mk_file(int flag, char* file_name, const int sock) 
 {   
     int filesize = if_hard_first(flag, sock, file_name);
     if (filesize == -1) { //硬链接同inode文件已经上传过
@@ -65,6 +67,7 @@ void mk_file(int flag, char* file_name, int sock)
         int n_write = write(c_fd, sendBuf, n_read);
         if (-1 == n_write) {
             perror("write");
+            printf("sock:%d\n",sock);
             printf("[%s]\n", file_name);
             close(fdfile);
             return;
@@ -83,7 +86,7 @@ void mk_file(int flag, char* file_name, int sock)
 /*
  *同步删除文件函数
  */
-void rm_file(char* file_name, int sock)
+void rm_file(char* file_name, const int sock)
 {
     int  c_fd = sock;
     char sendbuf[SIZE] = {"rm"};
@@ -91,6 +94,7 @@ void rm_file(char* file_name, int sock)
     int n_write = write(c_fd, sendbuf, sizeof(sendbuf));
     if (n_write == -1) {
         perror("rm_file send error");
+        printf("sock:%d\n",sock);
         return;
     }
 
@@ -103,7 +107,7 @@ void rm_file(char* file_name, int sock)
 /**
  *同步增加目录函数
  **/
-void mk_dir (char *dir_path, int sock)
+void mk_dir (char *dir_path, const int sock)
 {
     int  c_fd = sock;
     char sendbuf[SIZE] = {"mk"};
@@ -112,6 +116,7 @@ void mk_dir (char *dir_path, int sock)
     if (n_write == -1) {
         perror("directory synchronization  error : mk ");
         printf("[%s]\n",dir_path);
+        printf("sock:%d\n",sock);
         return;
     }
 
@@ -125,7 +130,7 @@ void mk_dir (char *dir_path, int sock)
  *  void rm_dir(char *dir_path);
  *  同步删除目录函数
  *****/
-void rm_dir(char *dir_path, int sock)
+void rm_dir(char *dir_path, const int sock)
 {
     int  c_fd = sock;
     char send_buff[SIZE] = {"rf"};
@@ -146,7 +151,7 @@ void rm_dir(char *dir_path, int sock)
   返回值：filesize --> yes
   -1       --> no
  **/
-int if_hard_first(int flag, int sock, char* file_name)
+int if_hard_first(int flag, const int sock, char* file_name)
 {
     //读取文件信息
     struct stat file;
@@ -268,7 +273,7 @@ char* seek_h_Source_file(char* seek_dir, int inode, char *file_name)
 /*
  *同步硬链接命令
  */
-void hard_link(int sock, char *O_path, char *S_path)
+void hard_link(const int sock, char *O_path, char *S_path)
 {   
     char send_buff[SIZE] = {'\0'};
     (void)memcpy(send_buff, "hd", 2);
@@ -285,13 +290,13 @@ void hard_link(int sock, char *O_path, char *S_path)
 /*
  *发送链接文件命令
  */
-void mk_linkfile(char *dir_path, int sock)
+void mk_linkfile(char *dir_path, const int sock)
 {   
     int  c_fd = sock;
     char send_buff[SIZE] = {"ln"};
     strcat(send_buff, dir_path);
-    int  n_read = readlink(dir_path, send_buff+strlen(send_buff)+1, sizeof(send_buff));
-    int  n_write = write(c_fd, send_buff, sizeof(send_buff));
+    int n_read = readlink(dir_path, send_buff+strlen(send_buff)+1, sizeof(send_buff));
+    int n_write = write(c_fd, send_buff, sizeof(send_buff));
     if (n_write == -1) {
         perror("linkfile synchronization  error : ln ");
         return;
@@ -309,7 +314,7 @@ void mk_linkfile(char *dir_path, int sock)
  *硬：inode number
  *软：S_IFLNK
  */
-int  _if_linkfile(char *filename)
+int _if_linkfile(char *filename)
 {   
     struct stat stat_buf;
     struct stat *p = &stat_buf;
@@ -323,7 +328,6 @@ int  _if_linkfile(char *filename)
     } else if (p -> st_nlink > 1) {
         return p -> st_ino;
     } else {
-        printf("都不是\n");
         return 0;
     }
 }
@@ -331,7 +335,7 @@ int  _if_linkfile(char *filename)
 /*
  *程序运行的第一件事：同步指定路径的文件夹
  */
-void first_event (int i_fd, char *dir_path, int num, struct dir_link *head, int sock)
+void first_event (int i_fd, char *dir_path, int num, struct dir_link *head, const int sock)
 {
     //同步test文件夹
     if (num) { 
@@ -499,6 +503,8 @@ void delete_list(struct event_list *head, char *do_path)
  *监控事件处理函数
  *将事件加入/更新到事件队列，添加/删除监控目录列表
  ******/
+
+struct inotify_event last_event;
 void do_event(int fd, struct inotify_event *event, struct dir_link *head, struct event_list *event_head)
 {
     char temp[SIZE] = {'\0'};
@@ -518,10 +524,11 @@ void do_event(int fd, struct inotify_event *event, struct dir_link *head, struct
     //是目录？
     if (event -> mask & IN_ISDIR) {
         if (event -> mask & (IN_CREATE | IN_MOVED_TO)) {
-            int wd = inotify_add_watch( fd, temp, IN_CREATE | IN_DELETE | IN_MOVE | IN_MODIFY | IN_DELETE_SELF);
-            add_link(head, wd, temp);
             if (event -> mask & IN_MOVED_TO) {
+                int wd = inotify_add_watch( fd, temp, IN_CREATE | IN_DELETE | IN_MOVE | IN_MODIFY | IN_DELETE_SELF);
+                add_link(head, wd, temp);
                 add_list(0, event_head, "mo", temp);
+
             } else {
                 add_list(0, event_head, "mk", temp);
             }
@@ -573,7 +580,7 @@ void signal_do(int num)
         } else if (!strcmp(temp_head -> cmd, "rm")) { 
             rm_file(temp_head -> do_path, _sock);
         } else if (!strcmp(temp_head->cmd, "mk")) {
-            mk_dir(temp_head -> do_path, _sock);
+            first_event (inotfy_fd, temp_head -> do_path, 1, head_link,_sock);
         } else if (!strcmp(temp_head -> cmd, "rf")) {
             rm_dir(temp_head -> do_path, _sock);
         } else if (!strcmp(temp_head -> cmd, "ln")) {
@@ -646,7 +653,7 @@ void journal_write(char *write_buf)
  *移动文件夹指令
  ******/
 char cmd[SIZE] = {'\0'};
-void mv_dir(int num, char *dir_path, int sock)
+void mv_dir(int num, char *dir_path, const int sock)
 {   
     char cmd_buf[SIZE] = {"mv "}; 
     if (FROM == num) {  //移入  

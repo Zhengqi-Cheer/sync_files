@@ -15,8 +15,9 @@
 #include <errno.h>
 
 #define PORT 8877 
-#define IP "172.16.163.152"   //service ip
-#define MAX_DIR_NUM 10
+#define IP "172.16.163.157"   //service ip
+#define MAX_DIR_NUM 1 
+#define NICE -5   //nice, 优先级
 #define SIZE 1024
 #define OUT  0 
 #define FROM 1
@@ -25,17 +26,20 @@
 #define SYNC_PATH "./../test"
 #define SYNC_FILE "/home/zhengquan/share/git/mession_3/cli/sync.result"
 
+//硬连接链表，就第一次用
 struct hard_link_list{
     int    inode;
     char   *path;
     struct hard_link_list *next;
 };
-
+//监控目录链表
 struct dir_link{
     int    wd;
     char   *dir_path;
     struct dir_link *next;
 };
+
+//事件链表
 struct event_list{
     int    inode;
     char   *cmd ;
@@ -43,20 +47,24 @@ struct event_list{
     struct event_list *next;
 };
 
-extern  struct event_list *_event_P ;
-extern  int _sock;
+extern struct dir_link *head_link;
+extern struct event_list *_event_P ;
+extern int _sock;
+extern int inotfy_fd;
+
+
 
 int   init_tcp(void);
-void  mk_file(int flag,char* file_name,int sock);  //发送同步文件命令
-void  rm_file(char* file_name,int sock);  //发送删除文件命令
-void  mk_dir (char *dir_path,int sock);   //发送创建目录命令
-void  rm_dir(char *dir_path,int sock);      //发送删除目录命令
-void  mk_linkfile(char *dir_path,int sock);//发送链接文件命令
-void  mv_dir(int num,char *dir_path,int sock);
-void  hard_link(int sock,char *O_path,char *S_path);
+void  mk_file(int flag,char* file_name,const int sock);  //发送同步文件命令
+void  rm_file(char* file_name,const int sock);  //发送删除文件命令
+void  mk_dir (char *dir_path,const int sock);   //发送创建目录命令
+void  rm_dir(char *dir_path,const int sock);      //发送删除目录命令
+void  mk_linkfile(char *dir_path,const int sock);//发送链接文件命令
+void  mv_dir(int num,char *dir_path,const int sock);
+void  hard_link(const int sock,char *O_path,char *S_path);
 void  hard_list(int inode,char *path);
 
-void  first_event (int i_fd,char *dir_path,int num,struct dir_link *path_link,int sock); //程序运行的第一件事：同步指定路径的文件夹
+void  first_event (int i_fd,char *dir_path,int num,struct dir_link *path_link,const int sock); //程序运行的第一件事：同步指定路径的文件夹
 
 void  add_link (struct dir_link *head,int wd, char *add_path);
 int   delete_link( struct dir_link *head,char *dir_path);
@@ -70,8 +78,9 @@ void  p_list();
 void  p_dir(struct dir_link *dir_head);
 void  journal_write(char *write_buf);
 int   _if_linkfile(char *filename);
-int   if_hard_first(int flag,int sock,char * file_name);
+int   if_hard_first(int flag,const int sock,char * file_name);
 char* seek_h_Source_file(char* seek_dir,int inode,char *file_name);
+static int comper_event (const struct inotify_event *_event);
 
 
 
