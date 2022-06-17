@@ -25,7 +25,6 @@ int main(void)
     }
 
     signal(SIGUSR1, signal_do);
-
     struct dir_link *path_link = (struct dir_link *)malloc(sizeof(struct dir_link));//头节点
     (void)memset(path_link, 0, sizeof(struct dir_link));
     head_link = path_link;//指向首元节点
@@ -37,13 +36,15 @@ int main(void)
         for (char *p = readbuf ; p < (readbuf+dir_read);) {   
             struct inotify_event *event;
             event = (struct inotify_event*)p;
-            p+= sizeof(struct inotify_event) + event->len;
+            p += sizeof(struct inotify_event) + event -> len;
             
             event_printf(event);
             do_event(inotfy_fd, event, head_link, _event_P);
         } 
+
         memset(readbuf, 0, sizeof(readbuf));
     }
+
     return 0;
 }
 
@@ -51,57 +52,57 @@ int main(void)
 
 void event_printf(struct inotify_event *event)
 {
-            /*
-                IN_ACCESS
-                IN_MODIFY
-                IN_ATTRIB
-                IN_CLOSE_WRITE
-                IN_CLOSE_NOWRITE
-                IN_OPEN
-                IN_MOVED_FROM
-                IN_MOVED_TO
-                IN_CREATE
-                IN_DELETE
-                IN_DELETE_SELF
-                IN_MOVE_SELF
-                IN_UNMOUNT
-                IN_CLOSE
-                IN_MOVE
-             */
-            if (event->mask & IN_ACCESS) {
-                printf("IN_ACCESS\n");
-            } else if (event->mask & IN_MOVE) {
-                printf("IN_MOVE\n");
-            } else if (event->mask & IN_CLOSE) {
-                printf("IN_CLOSE\n");
-            } else if (event->mask & IN_UNMOUNT) {
-                printf("IN_UNMOUNT\n");
-            } else if (event->mask & IN_MOVE_SELF) {
-                printf("IN_MOVE_SELF\n");
-            } else if (event->mask & IN_DELETE_SELF) {
-                printf("IN_DELETE_SELF\n");
-            } else if (event->mask & IN_DELETE) {
-                printf("IN_DELETE\n");
-            } else if (event->mask & IN_CREATE) {
-                printf("IN_CREATE\n");
-            } else if (event->mask & IN_MOVED_TO) {
-                printf("IN_MOVED_TO\n");
-            } else if (event->mask & IN_MOVED_FROM) {
-                printf("IN_MOVED_FROM\n");
-            } else if (event->mask & IN_OPEN) {
-                printf("IN_OPEN\n");
-            } else if (event->mask & IN_CLOSE_NOWRITE) {
-                printf("IN_CLOSE_NOWRITE\n");
-            } else if (event->mask & IN_CLOSE_WRITE) {
-                printf("IN_CLOSE_WRITE\n");
-            } else if (event->mask & IN_ATTRIB) {
-                printf("IN_ATTRIB\n");
-            } else if (event->mask & IN_MODIFY) {
-                printf("IN_MODIFY\n");
-            }
+    /*
+       IN_ACCESS
+       IN_MODIFY
+       IN_ATTRIB
+       IN_CLOSE_WRITE
+       IN_CLOSE_NOWRITE
+       IN_OPEN
+       IN_MOVED_FROM
+       IN_MOVED_TO
+       IN_CREATE
+       IN_DELETE
+       IN_DELETE_SELF
+       IN_MOVE_SELF
+       IN_UNMOUNT
+       IN_CLOSE
+       IN_MOVE
+     */
+    if (event->mask & IN_ACCESS) {
+        printf("IN_ACCESS\n");
+    } else if (event->mask & IN_MOVE) {
+        printf("IN_MOVE\n");
+    } else if (event->mask & IN_CLOSE) {
+        printf("IN_CLOSE\n");
+    } else if (event->mask & IN_UNMOUNT) {
+        printf("IN_UNMOUNT\n");
+    } else if (event->mask & IN_MOVE_SELF) {
+        printf("IN_MOVE_SELF\n");
+    } else if (event->mask & IN_DELETE_SELF) {
+        printf("IN_DELETE_SELF\n");
+    } else if (event->mask & IN_DELETE) {
+        printf("IN_DELETE\n");
+    } else if (event->mask & IN_CREATE) {
+        printf("IN_CREATE\n");
+    } else if (event->mask & IN_MOVED_TO) {
+        printf("IN_MOVED_TO\n");
+    } else if (event->mask & IN_MOVED_FROM) {
+        printf("IN_MOVED_FROM\n");
+    } else if (event->mask & IN_OPEN) {
+        printf("IN_OPEN\n");
+    } else if (event->mask & IN_CLOSE_NOWRITE) {
+        printf("IN_CLOSE_NOWRITE\n");
+    } else if (event->mask & IN_CLOSE_WRITE) {
+        printf("IN_CLOSE_WRITE\n");
+    } else if (event->mask & IN_ATTRIB) {
+        printf("IN_ATTRIB\n");
+    } else if (event->mask & IN_MODIFY) {
+        printf("IN_MODIFY\n");
+    }
 
-            printf("event-->name:%s\n",event -> name);
-            printf("event-->wd:%d\n",event -> wd);
-            printf("---------------------------------\n");
+    printf("event-->name:%s\n",event -> name);
+    printf("event-->wd:%d\n",event -> wd);
+    printf("---------------------------------\n");
 }
 

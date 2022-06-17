@@ -66,7 +66,6 @@ void  first_event (int i_fd,char *dir_path,int num,struct dir_link *path_link,co
 
 void  add_link (struct dir_link *head,int wd, char *add_path);
 int   delete_link( struct dir_link *head,char *dir_path);
-
 void  add_list(int flag ,struct event_list *head ,char *cmd,char *do_path);
 void  delete_list(struct event_list *head,char *do_path);
 

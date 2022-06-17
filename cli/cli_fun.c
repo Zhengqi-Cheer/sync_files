@@ -375,6 +375,7 @@ void first_event (int i_fd, char *dir_path, int num, struct dir_link *head, cons
             printf("%s  -->", (char*)(directory -> d_name));
             printf("%d  -->", (directory -> d_type));
         }
+
         char *p = strrchr(path, '/'); //目录路径修正->返回上一级目录
         *(p+1) = '\0';
     }
@@ -596,10 +597,12 @@ void signal_do(int num)
                 printf("没有找到硬链接%s的源文件\n", temp_head -> do_path);
             }
         }
+
         struct event_list *free_node = temp_head;
         temp_head = temp_head -> next;
         delete_list(_event_P, free_node -> do_path);
     }
+
     _event_P = temp_head;
 }
 
