@@ -23,7 +23,7 @@
 #define FROM 1
 #define H_LINK 1
 
-#define SYNC_PATH "./../uu"
+#define SYNC_PATH "./../test"
 #define SYNC_FILE "/home/zhengquan/share/git/mession_3/cli/sync.result"
 
 //硬连接链表，就第一次用
@@ -61,6 +61,7 @@ void  mk_linkfile(char *dir_path,const int sock);//发送链接文件命令
 void  mv_dir(int num,char *dir_path,const int sock);
 void  hard_link(const int sock,char *O_path,char *S_path);
 void  hard_list(int inode,char *path);
+void  free_hardfile_list();
 
 void  first_event (int i_fd,char *dir_path,int num,struct dir_link *path_link,const int sock); //程序运行的第一件事：同步指定路径的文件夹
 
@@ -69,13 +70,14 @@ int   delete_link( struct dir_link *head,char *dir_path);
 void  add_list(int flag ,struct event_list *head ,char *cmd,char *do_path);
 void  delete_list(struct event_list *head,char *do_path);
 
-void  do_event(int fd,struct inotify_event *event,struct dir_link *head,struct event_list *event_head);;
+void  do_event(int fd,struct inotify_event *event,struct dir_link *head,struct event_list *event_head);
 void  signal_do(int num);
 void  p_list();
 void  p_dir(struct dir_link *dir_head);
 void  journal_write(char *write_buf);
 int   _if_linkfile(char *filename);
 int   if_hard_first(int flag,const int sock,char * file_name);
+
 char* seek_h_Source_file(char* seek_dir,int inode,char *file_name);
 
 

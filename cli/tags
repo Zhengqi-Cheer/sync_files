@@ -4,57 +4,58 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.9~svn20110310	//
-FROM	./dameon.h	23;"	d
-H_LINK	./dameon.h	24;"	d
-IP	./dameon.h	18;"	d
-MAX_DIR_NUM	./dameon.h	19;"	d
-NICE	./dameon.h	20;"	d
-OUT	./dameon.h	22;"	d
-PORT	./dameon.h	17;"	d
-SIZE	./dameon.h	21;"	d
-SYNC_FILE	./dameon.h	27;"	d
-SYNC_PATH	./dameon.h	26;"	d
-_event_P	./cli_fun.c	/^struct event_list *_event_P = NULL; \/\/事件队列头指针$/;"	v	typeref:struct:event_list
-_if_linkfile	./cli_fun.c	/^int _if_linkfile(char *filename)$/;"	f
-_sock	./cli.c	/^int _sock;$/;"	v
-add_link	./cli_fun.c	/^void add_link(struct dir_link *head, int wd, char *add_path)$/;"	f
-add_list	./cli_fun.c	/^void add_list(int flag,struct event_list *head ,char *cmd, char *do_path)$/;"	f
-buf_len	./cli.c	3;"	d	file:
-cmd	./cli_fun.c	/^char cmd[SIZE] = {'\\0'};$/;"	v
-cmd	./dameon.h	/^    char   *cmd ;$/;"	m	struct:event_list
-comper_event	./cli_fun.c	/^ static int comper_event (const struct inotify_event *_event)$/;"	f	file:
-delete_link	./cli_fun.c	/^int delete_link(struct dir_link *head, char *dir_path)$/;"	f
-delete_list	./cli_fun.c	/^void delete_list(struct event_list *head, char *do_path)$/;"	f
-dir_link	./dameon.h	/^struct dir_link{$/;"	s
-dir_path	./dameon.h	/^    char   *dir_path;$/;"	m	struct:dir_link
-do_event	./cli_fun.c	/^void do_event(int fd, struct inotify_event *event, struct dir_link *head, struct event_list *event_head)$/;"	f
-do_path	./dameon.h	/^    char   *do_path;$/;"	m	struct:event_list
-event_list	./dameon.h	/^struct event_list{$/;"	s
-first_event	./cli_fun.c	/^void first_event (int i_fd, char *dir_path, int num, struct dir_link *head, const int sock)$/;"	f
-hard_file_head	./cli_fun.c	/^struct hard_link_list *hard_file_head = NULL;$/;"	v	typeref:struct:hard_link_list
-hard_link	./cli_fun.c	/^void hard_link(const int sock, char *O_path, char *S_path)$/;"	f
-hard_link_list	./dameon.h	/^struct hard_link_list{$/;"	s
-hard_list	./cli_fun.c	/^void hard_list(int inode, char *path)$/;"	f
-if_hard_first	./cli_fun.c	/^int if_hard_first(int flag, const int sock, char* file_name)$/;"	f
-init_tcp	./cli_fun.c	/^int init_tcp(void)$/;"	f
-inode	./dameon.h	/^    int    inode;$/;"	m	struct:event_list
-inode	./dameon.h	/^    int    inode;$/;"	m	struct:hard_link_list
-journal_write	./cli_fun.c	/^void journal_write(char *write_buf)$/;"	f
-last_event	./cli_fun.c	/^struct inotify_event last_event;$/;"	v	typeref:struct:inotify_event
-main	./cli.c	/^int main(void)$/;"	f
-mk_dir	./cli_fun.c	/^void mk_dir (char *dir_path, const int sock)$/;"	f
-mk_file	./cli_fun.c	/^void mk_file(int flag, char* file_name, const int sock) $/;"	f
-mk_linkfile	./cli_fun.c	/^void mk_linkfile(char *dir_path, const int sock)$/;"	f
-mv_dir	./cli_fun.c	/^void mv_dir(int num, char *dir_path, const int sock)$/;"	f
-next	./dameon.h	/^    struct dir_link *next;$/;"	m	struct:dir_link	typeref:struct:dir_link::dir_link
-next	./dameon.h	/^    struct event_list *next;$/;"	m	struct:event_list	typeref:struct:event_list::event_list
-next	./dameon.h	/^    struct hard_link_list *next;$/;"	m	struct:hard_link_list	typeref:struct:hard_link_list::hard_link_list
-p_dir	./cli_fun.c	/^void p_dir(struct dir_link *dir_head)$/;"	f
-p_list	./cli_fun.c	/^void p_list()$/;"	f
-path	./dameon.h	/^    char   *path;$/;"	m	struct:hard_link_list
-readbuf	./cli.c	/^char readbuf[buf_len] __attribute__ ((aligned(__alignof__(struct inotify_event))));$/;"	v
-rm_dir	./cli_fun.c	/^void rm_dir(char *dir_path, const int sock)$/;"	f
-rm_file	./cli_fun.c	/^void rm_file(char* file_name, const int sock)$/;"	f
-seek_h_Source_file	./cli_fun.c	/^char* seek_h_Source_file(char* seek_dir, int inode, char *file_name)$/;"	f
-signal_do	./cli_fun.c	/^void signal_do(int num)$/;"	f
-wd	./dameon.h	/^    int    wd;$/;"	m	struct:dir_link
+FROM	dameon.h	23;"	d
+H_LINK	dameon.h	24;"	d
+IP	dameon.h	18;"	d
+MAX_DIR_NUM	dameon.h	19;"	d
+NICE	dameon.h	20;"	d
+OUT	dameon.h	22;"	d
+PORT	dameon.h	17;"	d
+SIZE	dameon.h	21;"	d
+SYNC_FILE	dameon.h	27;"	d
+SYNC_PATH	dameon.h	26;"	d
+_event_P	cli_fun.c	/^struct event_list *_event_P = NULL; \/\/事件队列头指针$/;"	v	typeref:struct:event_list
+_if_linkfile	cli_fun.c	/^int _if_linkfile(char *filename)$/;"	f
+_sock	cli.c	/^int _sock = 0;$/;"	v
+add_link	cli_fun.c	/^void add_link(struct dir_link *head, int wd, char *add_path)$/;"	f
+add_list	cli_fun.c	/^void add_list(int flag,struct event_list *head ,char *cmd, char *do_path)$/;"	f
+buf_len	cli.c	3;"	d	file:
+cmd	cli_fun.c	/^char cmd[SIZE] = {'\\0'};$/;"	v
+cmd	dameon.h	/^    char   *cmd ;$/;"	m	struct:event_list
+delete_link	cli_fun.c	/^int delete_link(struct dir_link *head, char *dir_path)$/;"	f
+delete_list	cli_fun.c	/^void delete_list(struct event_list *head, char *do_path)$/;"	f
+dir_link	dameon.h	/^struct dir_link{$/;"	s
+dir_path	dameon.h	/^    char   *dir_path;$/;"	m	struct:dir_link
+do_event	cli_fun.c	/^void do_event(int fd, struct inotify_event *event, struct dir_link *head, struct event_list *event_head)$/;"	f
+do_path	dameon.h	/^    char   *do_path;$/;"	m	struct:event_list
+event_list	dameon.h	/^struct event_list{$/;"	s
+event_printf	cli.c	/^void event_printf(struct inotify_event *event)$/;"	f
+first_event	cli_fun.c	/^void first_event (int i_fd, char *dir_path, int num, struct dir_link *head, const int sock)$/;"	f
+hard_file_head	cli_fun.c	/^struct hard_link_list *hard_file_head = NULL;$/;"	v	typeref:struct:hard_link_list
+hard_link	cli_fun.c	/^void hard_link(const int sock, char *O_path, char *S_path)$/;"	f
+hard_link_list	dameon.h	/^struct hard_link_list{$/;"	s
+hard_list	cli_fun.c	/^void hard_list(int inode, char *path)$/;"	f
+head_link	cli.c	/^struct dir_link *head_link = NULL;  \/\/目录监控头指针$/;"	v	typeref:struct:dir_link
+if_hard_first	cli_fun.c	/^int if_hard_first(int flag, const int sock, char* file_name)$/;"	f
+init_tcp	cli_fun.c	/^int init_tcp(void)$/;"	f
+inode	dameon.h	/^    int    inode;$/;"	m	struct:event_list
+inode	dameon.h	/^    int    inode;$/;"	m	struct:hard_link_list
+inotfy_fd	cli.c	/^int inotfy_fd = 0;$/;"	v
+journal_write	cli_fun.c	/^void journal_write(char *write_buf)$/;"	f
+main	cli.c	/^int main(void)$/;"	f
+mk_dir	cli_fun.c	/^void mk_dir (char *dir_path, const int sock)$/;"	f
+mk_file	cli_fun.c	/^void mk_file(int flag, char* file_name, const int sock) $/;"	f
+mk_linkfile	cli_fun.c	/^void mk_linkfile(char *dir_path, const int sock)$/;"	f
+mv_dir	cli_fun.c	/^void mv_dir(int num, char *dir_path, const int sock)$/;"	f
+next	dameon.h	/^    struct dir_link *next;$/;"	m	struct:dir_link	typeref:struct:dir_link::dir_link
+next	dameon.h	/^    struct event_list *next;$/;"	m	struct:event_list	typeref:struct:event_list::event_list
+next	dameon.h	/^    struct hard_link_list *next;$/;"	m	struct:hard_link_list	typeref:struct:hard_link_list::hard_link_list
+p_dir	cli_fun.c	/^void p_dir(struct dir_link *dir_head)$/;"	f
+p_list	cli_fun.c	/^void p_list()$/;"	f
+path	dameon.h	/^    char   *path;$/;"	m	struct:hard_link_list
+readbuf	cli.c	/^char readbuf[buf_len] __attribute__ ((aligned(__alignof__(struct inotify_event))));$/;"	v
+rm_dir	cli_fun.c	/^void rm_dir(char *dir_path, const int sock)$/;"	f
+rm_file	cli_fun.c	/^void rm_file(char* file_name, const int sock)$/;"	f
+seek_h_Source_file	cli_fun.c	/^char* seek_h_Source_file(char* seek_dir, int inode, char *file_name)$/;"	f
+signal_do	cli_fun.c	/^void signal_do(int num)$/;"	f
+wd	dameon.h	/^    int    wd;$/;"	m	struct:dir_link

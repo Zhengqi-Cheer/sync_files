@@ -53,7 +53,13 @@ void mk_file(int flag, char* file_name, const int sock)
     (void)memcpy(sendBuf+sizeof(int), "up", strlen("up"));
     (void)memcpy(sendBuf+sizeof(int)+strlen("up"), file_name, strlen(file_name));
     int c_fd = sock;
-    write(c_fd, sendBuf, sizeof(sendBuf));
+    int n_write = write(c_fd, sendBuf, sizeof(sendBuf));
+    if (-1 == n_write ) {
+        perror("write mk_file error");
+        printf("sock = %d\n", sock);
+        return ;
+    }
+
     (void)memset(sendBuf, 0, sizeof(sendBuf));
     int fdfile = open(file_name, O_RDONLY);
     if (-1 == fdfile) {
@@ -94,7 +100,7 @@ void rm_file(char* file_name, const int sock)
     int n_write = write(c_fd, sendbuf, sizeof(sendbuf));
     if (n_write == -1) {
         perror("rm_file send error");
-        printf("sock:%d\n",sock);
+        printf("sock:%d\n", sock);
         return;
     }
 
@@ -172,12 +178,12 @@ int if_hard_first(int flag, const int sock, char* file_name)
         } else {
             struct hard_link_list *temp_head = hard_file_head;
             while (temp_head) {
-                if (temp_head -> inode == inode_id) {
-                    hard_link(sock, file_name, temp_head -> path);
+                if (temp_head->inode == inode_id) {
+                    hard_link(sock, file_name, temp_head->path);
                     return -1;
                 }
 
-                temp_head = temp_head -> next;
+                temp_head = temp_head->next;
             }
 
             hard_list(inode_id, file_name);
@@ -195,20 +201,20 @@ int if_hard_first(int flag, const int sock, char* file_name)
 void hard_list(int inode, char *path)
 {
     struct hard_link_list *newnode = (struct hard_link_list *)malloc(sizeof(struct hard_link_list));
-    newnode -> path = (char*)malloc(strlen(path)+1);
-    strncpy(newnode -> path, path, strlen(path));
-    newnode -> inode = inode;
-    newnode -> next = NULL;
+    newnode->path = (char*)malloc(strlen(path)+1);
+    strncpy(newnode->path, path, strlen(path));
+    newnode->inode = inode;
+    newnode->next = NULL;
 
     if (hard_file_head == NULL) {
         hard_file_head = newnode;
     } else {
         struct hard_link_list *temp = hard_file_head;
-        while (temp -> next) {
-            temp = temp -> next;
+        while (temp->next) {
+            temp = temp->next;
         }
 
-        temp -> next = newnode;
+        temp->next = newnode;
     }
 }
 /*
@@ -218,7 +224,7 @@ char* seek_h_Source_file(char* seek_dir, int inode, char *file_name)
 {   
     DIR *s_dir = opendir(seek_dir);
     if (s_dir == NULL) { 
-        perror("seek -> opendir error");
+        perror("seek->opendir error");
         printf("open dir error:%s\n", seek_dir);
         return NULL;
     }
@@ -229,34 +235,34 @@ char* seek_h_Source_file(char* seek_dir, int inode, char *file_name)
     struct dirent *directory = NULL;
     char *sp = NULL;
     while (directory = readdir(s_dir)) {
-        if (!strcmp(directory -> d_name, ".")) {
+        if (!strcmp(directory->d_name, ".")) {
             continue;
-        } else if (!strcmp(directory -> d_name, "..")) {
+        } else if (!strcmp(directory->d_name, "..")) {
             continue;
         }
 
-        strncat(s_path, directory -> d_name, strlen(directory -> d_name));
-
+        strncat(s_path, directory->d_name, strlen(directory->d_name));
         //目录文件
-        if (directory -> d_type == 4) {
+        if (directory->d_type == 4) {
             sp = seek_h_Source_file(s_path, inode, file_name);
             if (sp) {
                 break;
             }
             //文件
-        } else if (directory -> d_type == 8) {
+        } else if (directory->d_type == 8) {
             struct stat s_stat;
             (void)memset(&s_stat, 0, sizeof(s_stat));
             if (lstat(s_path, &s_stat)) {
                 perror("seek file error:");
                 printf("s_path error:%s\n", s_path);
-                return NULL;
+                continue;        
             }
 
             if ((s_stat.st_ino == inode) && strcmp(s_path, file_name)) {
                 printf("s_path:%s\n", s_path);
                 char *_sp = (char*)malloc(strlen(s_path)+1);
                 strcpy(_sp, s_path);
+                closedir(s_dir);
                 return _sp;
             }
         }
@@ -296,6 +302,10 @@ void mk_linkfile(char *dir_path, const int sock)
     char send_buff[SIZE] = {"ln"};
     strcat(send_buff, dir_path);
     int n_read = readlink(dir_path, send_buff+strlen(send_buff)+1, sizeof(send_buff));
+    if (n_read == -1) {
+        perror("readlink error");
+    }
+
     int n_write = write(c_fd, send_buff, sizeof(send_buff));
     if (n_write == -1) {
         perror("linkfile synchronization  error : ln ");
@@ -323,10 +333,10 @@ int _if_linkfile(char *filename)
         perror("lstat error");
     }
     
-    if (S_ISLNK(p -> st_mode)) {
+    if (S_ISLNK(p->st_mode)) {
         return S_IFLNK;
-    } else if (p -> st_nlink > 1) {
-        return p -> st_ino;
+    } else if (p->st_nlink > 1) {
+        return p->st_ino;
     } else {
         return 0;
     }
@@ -337,50 +347,65 @@ int _if_linkfile(char *filename)
  */
 void first_event (int i_fd, char *dir_path, int num, struct dir_link *head, const int sock)
 {
-    //同步test文件夹
-    if (num) { 
-        mk_dir(dir_path, sock);
-        int wd = inotify_add_watch(i_fd, dir_path, IN_CREATE | IN_DELETE | IN_MOVE | IN_MODIFY);
-        add_link(head, wd, dir_path);
-    }
-    //同步test文件夹内的文件
+    //同步路径文件夹内的文件
     char path[SIZE] = {'\0'};
     strcat(path, dir_path);
     DIR  *pdir = opendir(dir_path);
     strcat(path, "/");   //path --> <xxx/path/>
     struct dirent *directory = NULL;
     while (directory = readdir(pdir)) {
-        if (!strcmp(directory -> d_name, ".")) {
+        if (!strcmp(directory->d_name, ".")) {
             continue;
         }
-        if (!strcmp(directory -> d_name, "..")) {
+        if (!strcmp(directory->d_name, "..")) {
             continue;
         }
-        strcat(path, directory -> d_name);
+
+        strcat(path, directory->d_name);
         //其他文件
         //目录文件
-        if (directory -> d_type == 4) {
+        if (directory->d_type == 4) {
             int wd = inotify_add_watch(i_fd, path, IN_CREATE | IN_DELETE | IN_MOVE | IN_MODIFY | IN_DELETE_SELF);//将目录加入监控队列
             //-->添加到链表
             add_link(head, wd, path);
             mk_dir(path, sock);
             first_event(i_fd, path, 0, head, sock);
-        } else if (directory -> d_type == 8) {
+        } else if (directory->d_type == 8) {
             //普通文jian 
             mk_file(1, path, sock);
-        } else if (directory -> d_type == 10) {
+        } else if (directory->d_type == 10) {
             //符号文件 
             mk_linkfile(path, sock);
         } else {
-            printf("%s  -->", (char*)(directory -> d_name));
-            printf("%d  -->", (directory -> d_type));
+            printf("%s  -->", (char*)(directory->d_name));
+            printf("%d  -->", (directory->d_type));
         }
 
         char *p = strrchr(path, '/'); //目录路径修正->返回上一级目录
         *(p+1) = '\0';
     }
 
+    //监控该路径本身文件夹
+    if (num) { 
+        mk_dir(dir_path, sock);
+        int wd = inotify_add_watch(i_fd, dir_path, IN_CREATE | IN_DELETE | IN_MOVE | IN_MODIFY);
+        add_link(head, wd, dir_path);
+        free_hardfile_list();
+
+    }
+
     closedir(pdir);
+}
+
+void free_hardfile_list()
+{
+    struct hard_link_list *temp = NULL;
+    while (hard_file_head) {
+        temp = hard_file_head->next;
+        free(hard_file_head->path);
+        free(hard_file_head);
+        hard_file_head = temp;
+    }
 }
 
 /*
@@ -390,41 +415,37 @@ void add_link(struct dir_link *head, int wd, char *add_path)
 {
     //新链表节点
     struct dir_link *newnode = (struct dir_link *)malloc(sizeof(struct dir_link));
-    newnode -> wd = wd;
-    newnode -> dir_path = (char*)malloc(strlen(add_path)+1);
-    strcpy(newnode -> dir_path, add_path);
-    newnode -> next = NULL;
+    newnode->wd = wd;
+    newnode->dir_path = (char*)malloc(strlen(add_path)+1);
+    strcpy(newnode->dir_path, add_path);
+    newnode->next = NULL;
 
-    if (head == NULL) {
-        head -> next = newnode;
-    } else {
-        while (head -> next != NULL) {
-            head = head -> next; 
-        }   
+    while (head->next != NULL) {
+        head = head->next; 
+    }   
 
-        head -> next = newnode;
-    }
+    head->next = newnode;
 }
 
 /*
  *删除链表节点i
- *返回值： -1 --> 失败
- *         wd --> 成功
+ *返回值：| -1 --> 失败|
+ *        | wd --> 成功|
  */
 int delete_link(struct dir_link *head, char *dir_path)
 {   
     int wd = -1;
-    struct dir_link *next_node = head -> next;
+    struct dir_link *next_node = head->next;
     while (next_node) {
-        if (next_node -> dir_path == dir_path) {
-            wd = next_node -> wd;
-            free (next_node -> dir_path);
-            head -> next = next_node -> next;
+        if (next_node->dir_path == dir_path) {
+            wd = next_node->wd;
+            free (next_node->dir_path);
+            head->next = next_node -> next;
             free(next_node);
             return wd;
         } else {
             head = next_node;
-            next_node = next_node -> next;
+            next_node = next_node->next;
         }
     }
 
@@ -439,44 +460,44 @@ void add_list(int flag,struct event_list *head ,char *cmd, char *do_path)
     //改文件已经有事件发生了,
     struct event_list *temp_head = head;
     while (temp_head) { 
-        int t = !strcmp(temp_head -> do_path, do_path);
+        int t = !strcmp(temp_head->do_path, do_path);
         if (t) {
             //特：file创建->删除 = 无
-            if (!strcmp(temp_head -> cmd, "mk")) { 
+            if (!strcmp(temp_head->cmd, "mk")) { 
                 if (!strcmp(cmd, "rf")) {
                     delete_list(temp_head, do_path);
                 }
             }
 
             //同路径且与上一次的事件相同
-            else if (!strcmp(temp_head -> cmd, cmd)) {
+            else if (!strcmp(temp_head->cmd, cmd)) {
                 return;
             } else {
-                strcpy(temp_head -> cmd, cmd); 
+                strcpy(temp_head->cmd, cmd); 
             }
            
             return;
         }
 
-        temp_head = temp_head -> next;
+        temp_head = temp_head->next;
     }
 
     struct event_list *newnode = (struct event_list *)malloc(sizeof(struct event_list));
-    newnode -> cmd = (char*)malloc(strlen(cmd)+1);
-    strcpy(newnode -> cmd, cmd); 
-    newnode -> do_path = (char*)malloc(strlen(do_path)+1);
-    strcpy(newnode -> do_path,do_path);
-    newnode -> inode = flag;
-    newnode -> next = NULL;
+    newnode->cmd = (char*)malloc(strlen(cmd)+1);
+    strcpy(newnode->cmd, cmd); 
+    newnode->do_path = (char*)malloc(strlen(do_path)+1);
+    strcpy(newnode->do_path,do_path);
+    newnode->inode = flag;
+    newnode->next = NULL;
     temp_head = head;
     if (temp_head == NULL) {
         _event_P = newnode;
     } else {
-        while (temp_head -> next) {
-            temp_head = temp_head -> next;
+        while (temp_head->next) {
+            temp_head = temp_head->next;
         }
 
-        temp_head -> next = newnode;
+        temp_head->next = newnode;
     } 
 }
 
@@ -485,17 +506,21 @@ void add_list(int flag,struct event_list *head ,char *cmd, char *do_path)
  ******/
 void delete_list(struct event_list *head, char *do_path)
 {
-    struct event_list *next_node = head -> next;
+    if(head == NULL){
+        return;
+    }
+
+    struct event_list *next_node = head->next;
     while (next_node) {
-        if (!strcmp(next_node -> do_path, do_path)) {
-            free (next_node -> cmd);
-            free (next_node -> do_path);
-            head -> next = next_node -> next;
+        if (!strcmp(next_node->do_path, do_path)) {
+            free (next_node->cmd);
+            free (next_node->do_path);
+            head->next = next_node -> next;
             free(next_node);
             break;
         } else {
             head = next_node;
-            next_node = next_node -> next;
+            next_node = next_node->next;
         }
     } 
 }
@@ -510,20 +535,20 @@ void do_event(int fd, struct inotify_event *event, struct dir_link *head, struct
     struct dir_link *temp_head = head;
     //找路径
     while (temp_head) {
-        if (event -> wd == temp_head -> wd) {
-            strcpy(temp, temp_head -> dir_path);
+        if (event->wd == temp_head -> wd) {
+            strcpy(temp, temp_head->dir_path);
             strcat(temp, "/");
-            strcat(temp, event -> name);
+            strcat(temp, event->name);
             break;
         } else {
-            temp_head = temp_head -> next;
+            temp_head = temp_head->next;
         }
     }
 
     //是目录？
-    if (event -> mask & IN_ISDIR) {
-        if (event -> mask & (IN_CREATE | IN_MOVED_TO)) {
-            if (event -> mask & IN_MOVED_TO) {
+    if (event->mask & IN_ISDIR) {
+        if (event->mask & (IN_CREATE | IN_MOVED_TO)) {
+            if (event->mask & IN_MOVED_TO) {
                 int wd = inotify_add_watch( fd, temp, IN_CREATE | IN_DELETE | IN_MOVE | IN_MODIFY | IN_DELETE_SELF);
                 add_link(head, wd, temp);
                 add_list(0, event_head, "mo", temp);
@@ -533,7 +558,7 @@ void do_event(int fd, struct inotify_event *event, struct dir_link *head, struct
             }
         }
 
-        if (event -> mask & (IN_DELETE | IN_MOVED_FROM)) {
+        if (event->mask & (IN_DELETE | IN_MOVED_FROM)) {
             int wd = delete_link(head, temp);
             inotify_rm_watch(fd, wd);
             if (event->mask & IN_MOVED_FROM) {
@@ -545,9 +570,9 @@ void do_event(int fd, struct inotify_event *event, struct dir_link *head, struct
 
         //是其他、普通文件？
     } else {
-        if (event -> mask & IN_MODIFY) { 
+        if (event->mask & IN_MODIFY) { 
             add_list(0, event_head, "up", temp);
-        } else if (event -> mask & (IN_CREATE | IN_MOVED_TO)) {
+        } else if (event->mask & (IN_CREATE | IN_MOVED_TO)) {
             //是符号文件？
             int flag = _if_linkfile(temp);  
             if (S_IFLNK == flag) {
@@ -558,7 +583,7 @@ void do_event(int fd, struct inotify_event *event, struct dir_link *head, struct
                 add_list(0, event_head, "up", temp);
             }
 
-        } else if (event -> mask & (IN_DELETE | IN_MOVED_FROM)) {
+        } else if (event->mask & (IN_DELETE | IN_MOVED_FROM)) {
             add_list(0, event_head, "rm", temp);
         } 
     }
@@ -574,33 +599,33 @@ void signal_do(int num)
     p_list();
     struct event_list *temp_head = _event_P;
     while (temp_head != NULL) {
-        if (!strcmp(temp_head -> cmd, "up")) {
-            mk_file(0, temp_head -> do_path, _sock);
-        } else if (!strcmp(temp_head -> cmd, "rm")) { 
-            rm_file(temp_head -> do_path, _sock);
+        if (!strcmp(temp_head->cmd, "up")) {
+            mk_file(0, temp_head->do_path, _sock);
+        } else if (!strcmp(temp_head->cmd, "rm")) { 
+            rm_file(temp_head->do_path, _sock);
         } else if (!strcmp(temp_head->cmd, "mk")) {
-            first_event (inotfy_fd, temp_head -> do_path, 1, head_link,_sock);
-        } else if (!strcmp(temp_head -> cmd, "rf")) {
-            rm_dir(temp_head -> do_path, _sock);
-        } else if (!strcmp(temp_head -> cmd, "ln")) {
-            mk_linkfile(temp_head -> do_path, _sock);
-        } else if (!strcmp(temp_head -> cmd, "mf")) {
-            mv_dir(FROM, temp_head -> do_path, _sock);
-        } else if (!strcmp(temp_head -> cmd, "mo")) {
-            mv_dir(OUT, temp_head -> do_path, _sock);
-        } else if (!strcmp(temp_head -> cmd, "hd")) {
-            char *s_path = seek_h_Source_file(SYNC_PATH, temp_head -> inode, temp_head -> do_path);
+            first_event (inotfy_fd, temp_head->do_path, 1, head_link,_sock);
+        } else if (!strcmp(temp_head->cmd, "rf")) {
+            rm_dir(temp_head->do_path, _sock);
+        } else if (!strcmp(temp_head->cmd, "ln")) {
+            mk_linkfile(temp_head->do_path, _sock);
+        } else if (!strcmp(temp_head->cmd, "mf")) {
+            mv_dir(FROM, temp_head->do_path, _sock);
+        } else if (!strcmp(temp_head->cmd, "mo")) {
+            mv_dir(OUT, temp_head->do_path, _sock);
+        } else if (!strcmp(temp_head->cmd, "hd")) {
+            char *s_path = seek_h_Source_file(SYNC_PATH, temp_head->inode, temp_head -> do_path);
             if (s_path) {
-                hard_link(_sock, temp_head -> do_path, s_path);
+                hard_link(_sock, temp_head->do_path, s_path);
                 free(s_path);
             } else {
-                printf("没有找到硬链接%s的源文件\n", temp_head -> do_path);
+                printf("没有找到硬链接%s的源文件\n", temp_head->do_path);
             }
         }
 
         struct event_list *free_node = temp_head;
-        temp_head = temp_head -> next;
-        delete_list(_event_P, free_node -> do_path);
+        temp_head = temp_head->next;
+        delete_list(_event_P, free_node->do_path);
     }
 
     _event_P = temp_head;
@@ -611,9 +636,9 @@ void p_list()
 {
     struct event_list *temp_head = _event_P;
     while (temp_head) {
-        printf("cmd:%s\n", temp_head -> cmd);
-        printf("do_path:%s\n", temp_head -> do_path);
-        temp_head = temp_head -> next;
+        printf("cmd:%s\n", temp_head->cmd);
+        printf("do_path:%s\n", temp_head->do_path);
+        temp_head = temp_head->next;
     }
 }
 
@@ -621,9 +646,9 @@ void p_dir(struct dir_link *dir_head)
 {
     struct dir_link *temp_head = dir_head;
     while (temp_head) {
-        printf("wd:%d\n", temp_head -> wd);
-        printf("do_path:%s\n", temp_head -> dir_path);
-        temp_head = temp_head -> next;
+        printf("wd:%d\n", temp_head->wd);
+        printf("do_path:%s\n", temp_head->dir_path);
+        temp_head = temp_head->next;
     }
 }
 
