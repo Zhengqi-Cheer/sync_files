@@ -14,8 +14,8 @@ a.out
 ##目录
 
 
-#test/*
-#uu/*
+test/*
+uu/*
 temp/*
 sync.result
 
