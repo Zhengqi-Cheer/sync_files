@@ -503,8 +503,6 @@ void delete_list(struct event_list *head, char *do_path)
  *监控事件处理函数
  *将事件加入/更新到事件队列，添加/删除监控目录列表
  ******/
-
-struct inotify_event last_event;
 void do_event(int fd, struct inotify_event *event, struct dir_link *head, struct event_list *event_head)
 {
     char temp[SIZE] = {'\0'};

@@ -15,7 +15,7 @@
 #include <errno.h>
 
 #define PORT 8877 
-#define IP "172.16.163.157"   //service ip
+#define IP "172.16.163.158"   //service ip
 #define MAX_DIR_NUM 1 
 #define NICE -5   //nice, 优先级
 #define SIZE 1024
@@ -23,7 +23,7 @@
 #define FROM 1
 #define H_LINK 1
 
-#define SYNC_PATH "./../test"
+#define SYNC_PATH "./../uu"
 #define SYNC_FILE "/home/zhengquan/share/git/mession_3/cli/sync.result"
 
 //硬连接链表，就第一次用
@@ -52,8 +52,6 @@ extern struct event_list *_event_P ;
 extern int _sock;
 extern int inotfy_fd;
 
-
-
 int   init_tcp(void);
 void  mk_file(int flag,char* file_name,const int sock);  //发送同步文件命令
 void  rm_file(char* file_name,const int sock);  //发送删除文件命令
@@ -80,8 +78,5 @@ void  journal_write(char *write_buf);
 int   _if_linkfile(char *filename);
 int   if_hard_first(int flag,const int sock,char * file_name);
 char* seek_h_Source_file(char* seek_dir,int inode,char *file_name);
-static int comper_event (const struct inotify_event *_event);
-
-
 
 

@@ -1,0 +1,20 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_OUTPUT_MODE	u-ctags	/u-ctags or e-ctags/
+!_TAG_PROGRAM_AUTHOR	Universal Ctags Team	//
+!_TAG_PROGRAM_NAME	Universal Ctags	/Derived from Exuberant Ctags/
+!_TAG_PROGRAM_URL	https://ctags.io/	/official site/
+!_TAG_PROGRAM_VERSION	0.0.0	//
+FROM	serv.h	/^#define FROM /;"	d
+OUT	serv.h	/^#define OUT /;"	d
+PORT	serv.h	/^#define PORT /;"	d
+SIZE	serv.h	/^#define SIZE /;"	d
+add_file	serv_fun.c	/^void add_file(int c_fd, char* file_name)\/\/创建文件$/;"	f	typeref:typename:void
+hard_file	serv_fun.c	/^void hard_file(char *S_path)$/;"	f	typeref:typename:void
+init_sock	serv_fun.c	/^int init_sock (void)$/;"	f	typeref:typename:int
+main	ser.c	/^int main(void)$/;"	f	typeref:typename:int
+mk_dir	serv_fun.c	/^void mk_dir(char *dir_path)$/;"	f	typeref:typename:void
+mk_linkfile	serv_fun.c	/^void mk_linkfile(char *file_name)$/;"	f	typeref:typename:void
+mv_dir	serv_fun.c	/^void mv_dir(int num,char *dir_path)$/;"	f	typeref:typename:void
+rm_dir	serv_fun.c	/^void rm_dir(char *dir_path)$/;"	f	typeref:typename:void
+rm_file	serv_fun.c	/^void rm_file(char *file_name)$/;"	f	typeref:typename:void
