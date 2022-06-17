@@ -16,5 +16,9 @@ a.out
 /test/*
 /uu/*
 temp/*
-sync.result
 
+##指定文件
+
+sync.result
+tags
+client
